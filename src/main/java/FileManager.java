@@ -1,7 +1,4 @@
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.Arrays;
 
 public class FileManager {
@@ -23,18 +20,18 @@ public class FileManager {
     public FileManager() {
     }
 
-    public void openFile(String file) throws IOException {
+    public void codeFile(String file) throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(file));
         int znak;
         int[] wiadomosc = new int[LICZBA_BITOW];
         int[] sprawdz = new int[LICZBA_BITOW];
 
+        FileWriter writer = new FileWriter("zakodowany.txt");
 
-        System.out.println(Arrays.toString(wiadomosc));
-        System.out.println(Arrays.toString(sprawdz));
+        //System.out.println(Arrays.toString(wiadomosc));
+        //System.out.println(Arrays.toString(sprawdz));
         while ((znak = reader.read()) != -1) {
-            System.out.println(znak);
-
+            //System.out.println(znak);
 
             Utils.wyczyscTablice(sprawdz, LICZBA_BITOW);
             Utils.naBinarna(znak, wiadomosc, LICZBA_BITOW);
@@ -42,16 +39,40 @@ public class FileManager {
             System.out.println(Arrays.toString(wiadomosc));
             System.out.println(Arrays.toString(sprawdz));
 
-//            for (int i = 0; i < LICZBA_BITOW; i++) {
-//                for (int j = 0; j < LICZBA_BITOW; j++) {
-//                    sprawdz[i] += wiadomosc[j] * MACIERZ[j][i];
-//                }
-//                sprawdz[i] %= 2;
-//            }
-
-
+            for (int i = 0; i < LICZBA_BITOW; i++) {
+                for (int j = 0; j < LICZBA_BITOW; j++) {
+                    sprawdz[i] += wiadomosc[j] * MACIERZ[i][j];
+                }
+                sprawdz[i] %= 2;
+            }
+            for (int i = 0; i < LICZBA_BITOW; i++) {
+                writer.write(wiadomosc[i] + 48);
+            }
+            for (int i = 0; i < LICZBA_BITOW; i++) {
+                writer.write(sprawdz[i] + 48);
+            }
+            writer.write("\n");
+            //int a = 128;
+            //char kod = 0;
+            //for (int i = 0; i < LICZBA_BITOW; i++) {
+            //    kod += a * wiadomosc[i];
+            //    a /= 2;
+            //}
+            //fputc(kod, code2);
+            //a = 128;
+            //kod = 0;
+            //for (int i = 0; i < LICZBA_BITOW; i++) {
+            //    kod += a * sprawdz[i];
+            //    a /= 2;
+            //}
+            //fputc(kod, code2);
 
         }
+        writer.close();
+        System.out.println("File encoded succesfully");
+
     }
+
+    //public void decodeFile()
 
 }
