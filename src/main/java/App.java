@@ -21,10 +21,10 @@ public class App {
 
         switch (wybor) {
             case 1 -> {
-                //System.out.println("Wprowadz nazwe pliku: ");
-                //String filePath = in.next();
-                //fileManager.openFile(filePath);
-                fileManager.codeFile("data.txt");
+                System.out.println("Wprowadz nazwe pliku: ");
+                String filePath = in.next();
+                fileManager.codeFile(filePath);
+                //fileManager.codeFile("data.txt");
             }
             case 2 -> {
                 fileManager.decodeFile();

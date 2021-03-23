@@ -4,17 +4,20 @@ import java.util.Arrays;
 public class FileManager {
 
 
-    // Macierz 8x16
+    // MACIERZ BEZ KOLUMNY ZEROWEJ ORAZ BEZ POWTARZAJACYCH SIE KOLUMN
     static final byte[][] MACIERZ = new byte[][] {
-        {1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
-        {1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
-        {1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0},
-        {0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0},
-        {1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0},
-        {1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0},
-        {0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0},
-        {1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1}
+        {0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0},
+        {1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0},
+        {1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0},
+        {1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0},
+        {0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0},
+        {1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
+        {1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0},
+        {0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1}
     };
+    // MACIERZ WYGENEROWANA NA STRONIE http://www.ee.unb.ca/cgi-bin/tervo/polygen2.pl?d=8&p=101011001&s=1&c=1&a=1&g=1
+
+
 
     public FileManager() {
     }
@@ -56,96 +59,118 @@ public class FileManager {
         BufferedWriter writer = new BufferedWriter(new FileWriter("odkodowany.txt"));
 
         byte[] zakodowanaWiadomosc = new byte[16];
-        byte[] mistakesArray = new byte[8];
+        byte[] iloczyn = new byte[8];
 
         byte znak;
         byte index = 0;
-        byte iloscZnakow = 1;
-        int iloscBledow = 0;
+        boolean wystapil_blad = false;
 
         // WCZYTYWANIE ZAKODOWANEGO PLIKU
         while ((znak = (byte) reader.read()) != -1) {
-            if (znak != '\n') {
+
+            if (znak == '\n') {
+                wystapil_blad = false;
+                index = 0;
+                System.out.println("Zakodowana wiadomosc: \n" + Arrays.toString(zakodowanaWiadomosc));
+
+                // OBLICZENIE ILOCZYNU ZAKODOWANEJ WIADOMOSCI Z MACIERZA H
+                for (int x = 0; x < 8; x++) {
+                    iloczyn[x] = 0;
+                    for (int y = 0; y < 16; y++) {
+                        iloczyn[x] += zakodowanaWiadomosc[y] * MACIERZ[x][y];
+                    }
+                    // SPRAWDZENIE CZY OTRZYMANY ILOCZYN JEST SAMYMI 0
+                    if ((iloczyn[x] %= 2) != 0) wystapil_blad = true;
+                }
+
+                System.out.println("Zakodowany iloczyn: \n" + Arrays.toString(iloczyn));
+                System.out.println("Wystapil blad: \n" + wystapil_blad);
+
+                // JESLI ILOCZYN NIE JEST 0 TO WYSTAPIL BLAD
+                if (wystapil_blad) {
+                    int bladPojedynczy = 0;
+
+                    // SPRAWDZENIE CZY OTRZYMANY BLAD JEST POJEDYNCZY
+                    for (int x = 0; x < 8; x++) {
+                        bladPojedynczy = 0;
+                        // JESLI OTRZYMANY ILOCZYN JEST ROWNY KOLUMNIE TO OZNACZA ZE WYSTAPIL BLAD POJEDYNCZY
+                        for (int y = 0; y < 8; y++) {
+                            if (iloczyn[y] == MACIERZ[y][x]) {
+                                bladPojedynczy++;
+                            }
+                        }
+                        // JESLI WYSTAPIL BLAD POJEDYNCZY TO BIT O NUMERZE KOLUMNY ZANEGUJ
+                        if (bladPojedynczy == 8) {
+                            if (zakodowanaWiadomosc[x] == 0) {
+                                zakodowanaWiadomosc[x] = 1;
+                            }
+                            else {
+                                zakodowanaWiadomosc[x] = 0;
+                            }
+                            break;
+                        }
+                    }
+
+                    // JESLI BLAD NIE JEST BLEDEM POJEDYNCZYM
+                    if (bladPojedynczy != 8) {
+
+                        int indexPierwszegoBledu;
+                        int indexDrugiegoBledu;
+                        boolean znaleziono;
+
+                        // SPRAWDZENIE CZY OTRZYMANY ILOCZYN NIE JEST SUMA 2 KOLUMN
+                        for (int x = 0; x < 15; x++) {
+                            for (int y = x + 1; y < 16; y++) {
+                                znaleziono = true;
+                                for (int k = 0; k < 8; k++) {
+                                    if (iloczyn[k] != (MACIERZ[k][x] ^ MACIERZ[k][y])) {
+                                        znaleziono = false;
+                                        break;
+                                    }
+                                }
+                                // JESLI BLAD JEST PODWOJNY
+                                if (znaleziono) {
+
+                                    indexPierwszegoBledu = x;
+                                    indexDrugiegoBledu = y;
+
+                                    // ZANEGUJ BITY O INDEXIE ZNALEZIONEJ KOLUMNY
+                                    if (zakodowanaWiadomosc[indexPierwszegoBledu] == 0) {
+                                        zakodowanaWiadomosc[indexPierwszegoBledu] = 1;
+                                    } else {
+                                        zakodowanaWiadomosc[indexPierwszegoBledu] = 0;
+                                    }
+
+                                    // ZANEGUJ BITY O INDEXIE ZNALEZIONEJ KOLUMNY
+                                    if (zakodowanaWiadomosc[indexDrugiegoBledu] == 0) {
+                                        zakodowanaWiadomosc[indexDrugiegoBledu] = 1;
+                                    } else {
+                                        zakodowanaWiadomosc[indexDrugiegoBledu] = 0;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                }
+
+                // ZAPISANIE ZNAKOW DO PLIKU
+                char znakASCII = 0;
+                for (int i = 7; i > -1; i--) {
+                    znakASCII += zakodowanaWiadomosc[i] * Math.pow(2, 7 - i);
+                }
+                System.out.println(znakASCII);
+                writer.write(znakASCII);
+
+            // JESLI WCZYTANY ZNAK TO NIE KONIEC LINI \N
+            } else {
                 zakodowanaWiadomosc[index] = (byte) (znak - 48);
                 index++;
-            } else {
-                int firstBitIndex;
-                int secondBitIndex;
-                for (int i = 0; i < 8; i++) {
-                    mistakesArray[i] = 0;
-                    for (int j = 0; j < (8 * 2); j++) {
-                        mistakesArray[i] += zakodowanaWiadomosc[j] * MACIERZ[i][j];
-                    }
-                    mistakesArray[i] %= 2;
-                    if (mistakesArray[i] == 1) {
-                        iloscBledow = 1;
-                    }
-                }
-                if (iloscBledow != 0) {
-                    int exists = 0;
-                    for (int i = 0; i < 15; i++) {
-                        for (int j = i + 1; j < (16); j++) {
-                            exists = 1;
-                            for (int k = 0; k < 8; k++) {
-                                if (mistakesArray[k] != (MACIERZ[k][i] ^ MACIERZ[k][j])) {
-                                    exists = 0;
-                                    break;
-                                }
-                            }
-                            if (exists == 1) { //PRZYPADEK DLA 2 BLEDOW
-                                firstBitIndex = i;
-                                secondBitIndex = j;
-                                if (zakodowanaWiadomosc[firstBitIndex] != 0) {
-                                    zakodowanaWiadomosc[firstBitIndex] = 0;
-                                } else {
-                                    zakodowanaWiadomosc[firstBitIndex] = 1;
-                                }
-
-                                if (zakodowanaWiadomosc[secondBitIndex] != 0) {
-                                    zakodowanaWiadomosc[secondBitIndex] = 0;
-                                } else {
-                                    zakodowanaWiadomosc[secondBitIndex] = 1;
-                                }
-                                i = (8 * 2);
-                                break;
-                            }
-                        }
-                    }
-                    if (iloscBledow == 1) {
-                        for (int i = 0; i < (8 * 2); i++) {
-                            for (int j = 0; j < 8; j++) {
-                                if (MACIERZ[j][i] !=
-                                        mistakesArray[j]) {
-                                    break;
-                                }
-
-                                if (j == 7) {
-                                    if (zakodowanaWiadomosc[i] != 0) {
-                                        zakodowanaWiadomosc[i] = 0;
-                                    } else {
-                                        zakodowanaWiadomosc[i] = 1;
-                                    }
-                                    i = (8 * 2);
-                                }
-                            }
-                        }
-                    }
-                }
-                index = 0;
-                iloscZnakow++;
-                iloscBledow = 0;
-                int a = 128;
-                char kod = 0;
-                for (int i = 0; i < 8; i++) {
-                    kod += a * zakodowanaWiadomosc[i];
-                    a /= 2;
-                }
-                System.out.println(kod);
-                writer.write(kod);
             }
+
         }
         reader.close();
         writer.close();
-        System.out.println("File encoded succesfully");
     }
 }
