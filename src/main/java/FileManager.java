@@ -26,36 +26,28 @@ public class FileManager {
 
         byte znak;
         byte[] wiadomosc = new byte[8];
-        byte[] sprawdz = new byte[8];
+        byte[] sprawdzajace = new byte[8];
 
-        //System.out.println(Arrays.toString(wiadomosc));
-        //System.out.println(Arrays.toString(sprawdz));
+        // WCZYTYWANIE ZNAKOW Z PLIKU
         while ((znak = (byte) reader.read()) != -1) {
 
-            Utils.wyczyscTablice(sprawdz, 8);
+            // WYZEROWANIE TABLICY
+            Utils.wyczyscTablice(sprawdzajace, 8);
+
+            // ZAMIANA WCZYTANEGO ZNAKU 8 BITOWEGO DO POSTACI BINARNEJ
             Utils.naBinarna(znak, wiadomosc, 8);
 
-            System.out.println(Arrays.toString(wiadomosc));
-            System.out.println(Arrays.toString(sprawdz));
+            // WYLICZENIE BITOW SPRAWDZAJACYCH
+            Utils.obliczWektor(wiadomosc, sprawdzajace, MACIERZ);
 
-            // Wylicz
-            Utils.obliczWektor(wiadomosc, sprawdz, MACIERZ);
-            //for (int i = 0; i < 8; i++) {
-            //    for (int j = 0; j < 8; j++) {
-            //        sprawdz[i] += wiadomosc[j] * MACIERZ[i][j];
-            //    }
-            //    sprawdz[i] %= 2;
-            //}
-
+            // ZAPISANIE ZAKODOWANEGO ZNAKU WRAZ Z BITAMI SPRAWDZAJACYMI
             Utils.wpiszDoPliku(wiadomosc, 8, writer);
-            Utils.wpiszDoPliku(sprawdz, 8, writer);
+            Utils.wpiszDoPliku(sprawdzajace, 8, writer);
 
             writer.write("\n");
-
         }
         reader.close();
         writer.close();
-        System.out.println("File encoded succesfully");
     }
 
     public void decodeFile() throws IOException {
@@ -63,29 +55,33 @@ public class FileManager {
         BufferedReader reader = new BufferedReader(new FileReader("zakodowany.txt"));
         BufferedWriter writer = new BufferedWriter(new FileWriter("odkodowany.txt"));
 
-        byte[] encodedFileArray = new byte[16];
+        byte[] zakodowanaWiadomosc = new byte[16];
         byte[] mistakesArray = new byte[8];
-        byte sign, counter = 0, signCounter = 1, mistakesCounter = 0;
 
+        byte znak;
+        byte index = 0;
+        byte iloscZnakow = 1;
+        int iloscBledow = 0;
 
-        while ((sign = (byte) reader.read()) != -1) {
-            if (sign != '\n') {
-                encodedFileArray[counter] = (byte) (sign - 48);
-                counter++;
+        // WCZYTYWANIE ZAKODOWANEGO PLIKU
+        while ((znak = (byte) reader.read()) != -1) {
+            if (znak != '\n') {
+                zakodowanaWiadomosc[index] = (byte) (znak - 48);
+                index++;
             } else {
                 int firstBitIndex;
                 int secondBitIndex;
                 for (int i = 0; i < 8; i++) {
                     mistakesArray[i] = 0;
                     for (int j = 0; j < (8 * 2); j++) {
-                        mistakesArray[i] += encodedFileArray[j] * MACIERZ[i][j];
+                        mistakesArray[i] += zakodowanaWiadomosc[j] * MACIERZ[i][j];
                     }
                     mistakesArray[i] %= 2;
                     if (mistakesArray[i] == 1) {
-                        mistakesCounter = 1;
+                        iloscBledow = 1;
                     }
                 }
-                if (mistakesCounter != 0) {
+                if (iloscBledow != 0) {
                     int exists = 0;
                     for (int i = 0; i < 15; i++) {
                         for (int j = i + 1; j < (16); j++) {
@@ -99,23 +95,23 @@ public class FileManager {
                             if (exists == 1) { //PRZYPADEK DLA 2 BLEDOW
                                 firstBitIndex = i;
                                 secondBitIndex = j;
-                                if (encodedFileArray[firstBitIndex] != 0) {
-                                    encodedFileArray[firstBitIndex] = 0;
+                                if (zakodowanaWiadomosc[firstBitIndex] != 0) {
+                                    zakodowanaWiadomosc[firstBitIndex] = 0;
                                 } else {
-                                    encodedFileArray[firstBitIndex] = 1;
+                                    zakodowanaWiadomosc[firstBitIndex] = 1;
                                 }
 
-                                if (encodedFileArray[secondBitIndex] != 0) {
-                                    encodedFileArray[secondBitIndex] = 0;
+                                if (zakodowanaWiadomosc[secondBitIndex] != 0) {
+                                    zakodowanaWiadomosc[secondBitIndex] = 0;
                                 } else {
-                                    encodedFileArray[secondBitIndex] = 1;
+                                    zakodowanaWiadomosc[secondBitIndex] = 1;
                                 }
                                 i = (8 * 2);
                                 break;
                             }
                         }
                     }
-                    if (mistakesCounter == 1) {
+                    if (iloscBledow == 1) {
                         for (int i = 0; i < (8 * 2); i++) {
                             for (int j = 0; j < 8; j++) {
                                 if (MACIERZ[j][i] !=
@@ -124,10 +120,10 @@ public class FileManager {
                                 }
 
                                 if (j == 7) {
-                                    if (encodedFileArray[i] != 0) {
-                                        encodedFileArray[i] = 0;
+                                    if (zakodowanaWiadomosc[i] != 0) {
+                                        zakodowanaWiadomosc[i] = 0;
                                     } else {
-                                        encodedFileArray[i] = 1;
+                                        zakodowanaWiadomosc[i] = 1;
                                     }
                                     i = (8 * 2);
                                 }
@@ -135,13 +131,13 @@ public class FileManager {
                         }
                     }
                 }
-                counter = 0;
-                signCounter++;
-                mistakesCounter = 0;
+                index = 0;
+                iloscZnakow++;
+                iloscBledow = 0;
                 int a = 128;
                 char kod = 0;
                 for (int i = 0; i < 8; i++) {
-                    kod += a * encodedFileArray[i];
+                    kod += a * zakodowanaWiadomosc[i];
                     a /= 2;
                 }
                 System.out.println(kod);
